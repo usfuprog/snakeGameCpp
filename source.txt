@@ -1,0 +1,422 @@
+#include <iostream>
+#include <conio.h>
+#include <windows.h>
+#include <time.h>
+using namespace std;
+
+const int MAX_HORIZONTAL = 30;
+const int MAX_VERTICAL = 15;
+const int MAX_SNAKE_SIZE = 256;
+const int START_SNAKE_SIZE = 3;
+const int START_POS_HOR = 20;
+const int START_POS_VER = 10;
+enum{OK, BULL_SHIT};
+enum snake_speed_menu{SPEED_FIRST = 90, SPEED_SECOND = 60, SPEED_THIRD = 30};
+enum{UP = 72, RIGHT = 77, DWN = 80, LEFT = 75, ESC = 27, ENTER = 13};
+
+struct snake_constance
+{
+	int snake_pos[2][MAX_SNAKE_SIZE];
+	int snake_size_now;
+	int rand_el_pos[2];
+	int direct;
+	int last_el_pos[2];
+	int score_param;
+	char head_char;
+	char standart_char;
+};
+
+void gotoxy(int, int);
+void clrscr();
+void draw_border();
+int speed_menu();
+
+void set_start_params(snake_constance *);
+void draw_snake(const snake_constance *);
+void next_snake_move(snake_constance *);
+bool dinner_was_eaten(const snake_constance *);
+void set_next_dinner(const snake_constance *);
+void clear_last_pos(const snake_constance *);
+void get_rand_pos(snake_constance *);
+void show_info(const snake_constance *);
+void set_score(snake_constance *, int);
+void make_pause();
+void start_note();
+void final_note();
+bool lady_winter_success(const snake_constance *);
+int change_direct(int, int);
+void growth_and_food(snake_constance &, int);
+
+int main()
+{
+	start_note();
+	int snake_speed = speed_menu();
+	snake_constance Constance;
+	set_start_params(&Constance);
+
+	while (true)
+	{
+	if (_kbhit())
+	{
+		int ch = _getch();
+		if (ch == 0 || ch == 224)
+		{
+			int key_now = _getch();
+			Constance.direct = change_direct(Constance.direct, key_now);
+		}
+		if (ch == ESC)
+			break;
+		if (ch == ENTER)
+			make_pause();
+	}
+
+	next_snake_move(&Constance);
+
+	if (dinner_was_eaten(&Constance) == true)
+		growth_and_food(Constance, snake_speed);
+	else
+		clear_last_pos(&Constance);
+
+	draw_snake(&Constance);
+
+	if (lady_winter_success(&Constance) == true)
+	{
+		final_note();
+		break;
+	}
+
+	Sleep(snake_speed);
+	Sleep(snake_speed);
+	}
+
+	return 0;
+}
+//------------------------------------------GOTOXY
+void gotoxy(int x, int y)
+{
+	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+	_COORD pos;
+	pos.X = x;
+	pos.Y = y;
+	SetConsoleCursorPosition(hConsole, pos);
+}
+//------------------------------------------CLRSCR
+void clrscr()
+{
+	system("cls");
+}
+//------------------------------------------SPEED_MENU
+int speed_menu()
+{
+	int result = 0;
+	char r_info[50];
+
+	while (result < 1 || result > 3)
+	{
+		cout << "\nChoose snake speed: 1 - SLOW, 2 - MEDIUM, 3 - QUICK\n";
+		cout << "\n\"Enter\" now = exit prog. In the game = pause/unpause game. Good luck.\n";
+		result = atoi(gets(r_info));
+		if (strcmp(r_info, "") == 0)
+			break;
+		if (strcmp(r_info, "?") == 0)
+			cout << "usfuprog@gmail.com\n";
+	}
+
+	int snake_speed = -1;
+
+	if (result == 1)
+		snake_speed = SPEED_FIRST;
+	if (result == 2)
+		snake_speed = SPEED_SECOND;
+	if (result == 3)
+		snake_speed = SPEED_THIRD;
+	
+	if (snake_speed < 0)
+		exit(0);
+
+	return snake_speed;
+}
+//------------------------------------------DRAW_BORDER
+void draw_border()
+{
+	for (int i = 0; i <= MAX_VERTICAL; i ++)
+	{
+		for (int j = 0; j <= MAX_HORIZONTAL; j ++)
+			if (j == 0 || j == MAX_HORIZONTAL || i == 0 || i == MAX_VERTICAL)
+				cout << (char)18;
+			else
+				cout << " ";
+	cout << endl;
+	}
+}
+//------------------------------------------GET_RAND_POS
+void get_rand_pos(snake_constance *Constance)
+{
+	srand(time(0));
+	int num1, num2;
+	bool stop_cykl = false;
+
+	while (stop_cykl == false)
+	{
+		stop_cykl = true;
+		num1 = rand() % (MAX_HORIZONTAL - 1) + 1;
+		num2 = rand() % (MAX_VERTICAL - 1) + 1;
+		for (int i = 0; i < Constance->snake_size_now; i ++)
+			if (num1 == Constance->snake_pos[0][i])
+				if (num2 == Constance->snake_pos[1][i])
+					stop_cykl = false;
+	}
+
+	Constance->rand_el_pos[0] = num1;
+	Constance->rand_el_pos[1] = num2;
+}
+//------------------------------------------SET_START_PARAMS
+void set_start_params(snake_constance *Constance)
+{
+	Constance->snake_size_now = START_SNAKE_SIZE;
+	Constance->direct = RIGHT;
+
+	for (int i = 0; i < MAX_SNAKE_SIZE; i ++)
+		Constance->snake_pos[0][i] = Constance->snake_pos[1][i] = 0;
+
+	Constance->snake_size_now = 0;
+
+	Constance->snake_pos[0][Constance->snake_size_now] = START_POS_HOR;
+	Constance->snake_pos[1][Constance->snake_size_now] = START_POS_VER;
+	Constance->snake_size_now ++;
+	Constance->snake_pos[0][Constance->snake_size_now] = START_POS_HOR - 1;
+	Constance->snake_pos[1][Constance->snake_size_now] = START_POS_VER;
+	Constance->snake_size_now ++;
+	Constance->snake_pos[0][Constance->snake_size_now] = START_POS_HOR - 2;
+	Constance->snake_pos[1][Constance->snake_size_now] = START_POS_VER;
+	Constance->snake_size_now ++;
+
+	Constance->score_param = 0;
+	Constance->standart_char = (char)15;
+	//Constance->head_char = (char)48;
+	Constance->head_char = (char)64;
+	//Constance->head_char = (char)79;
+
+	clrscr();
+	draw_border();
+
+	get_rand_pos(Constance);
+	set_next_dinner(Constance);
+
+	draw_snake(Constance);
+	show_info(Constance);
+}
+//------------------------------------------CHANGE_DIRECT
+int change_direct(int direct_now, int key_now)
+{
+	switch (key_now)
+	{
+	case UP:
+		if (direct_now != DWN)
+			direct_now = key_now;
+		break;
+	case LEFT:
+		if (direct_now != RIGHT)
+			direct_now = key_now;
+		break;
+	case RIGHT:
+		if (direct_now != LEFT)
+			direct_now = key_now;
+		break;
+	case DWN:
+		if (direct_now != UP)
+			direct_now = key_now;
+		break;
+	}
+
+	return direct_now;
+}
+//------------------------------------------GROWTH_AND_FOOD
+void growth_and_food(snake_constance &Constance, int snake_speed)
+{
+		if (Constance.snake_size_now < MAX_SNAKE_SIZE)
+		{
+			Constance.snake_pos[0][Constance.snake_size_now] = Constance.last_el_pos[0];
+			Constance.snake_pos[1][Constance.snake_size_now] = Constance.last_el_pos[1];
+			Constance.snake_size_now ++;
+		}
+		else
+			clear_last_pos(&Constance);
+
+		get_rand_pos(&Constance);
+		set_next_dinner(&Constance);
+		set_score(&Constance, snake_speed);
+		show_info(&Constance);
+}
+//------------------------------------------DRAW_SNAKE
+void draw_snake(const snake_constance *Constance)
+{
+	if (Constance->snake_size_now > START_SNAKE_SIZE)
+	{
+		gotoxy(Constance->snake_pos[0][3], Constance->snake_pos[1][3]);
+		cout << Constance->standart_char;
+	}
+	
+	gotoxy(Constance->snake_pos[0][0], Constance->snake_pos[1][0]);
+	cout << Constance->head_char;
+}
+//------------------------------------------NEXT_SNAKE_MOVE
+void next_snake_move(snake_constance *Constance)
+{
+		int x = Constance->snake_pos[0][0];
+		int y = Constance->snake_pos[1][0];
+
+		int tmp_dir = Constance->direct;
+		if (tmp_dir == UP)
+			y --;
+		if (tmp_dir == LEFT)
+			x --;
+		if (tmp_dir == RIGHT)
+			x ++;
+		if (tmp_dir == DWN)
+			y ++;
+
+		if (x == 0 || x > MAX_HORIZONTAL - 1)
+			x == 0 ? x = MAX_HORIZONTAL - 1 : x = 1;
+
+		if (y == 0 || y > MAX_VERTICAL - 1)
+			y == 0 ? y = MAX_VERTICAL - 1 : y = 1;
+
+		Constance->last_el_pos[0] = Constance->snake_pos[0][Constance->snake_size_now - 1];
+		Constance->last_el_pos[1] = Constance->snake_pos[1][Constance->snake_size_now - 1];
+
+		for (int i = Constance->snake_size_now - 1; i > 0; i --)
+		{
+			Constance->snake_pos[0][i] = Constance->snake_pos[0][i - 1];
+			Constance->snake_pos[1][i] = Constance->snake_pos[1][i - 1];
+		}
+
+		Constance->snake_pos[0][0] = x;
+		Constance->snake_pos[1][0] = y;
+}
+//------------------------------------------DINNER_WAS_EATEN
+bool dinner_was_eaten(const snake_constance *Constance)
+{
+	if (Constance->snake_pos[0][0] == Constance->rand_el_pos[0])
+		if (Constance->snake_pos[1][0] == Constance->rand_el_pos[1])
+			return BULL_SHIT;
+
+	return OK;
+}
+//------------------------------------------SET_NEXT_DINNER
+void set_next_dinner(const snake_constance *Constance)
+{
+	gotoxy(Constance->rand_el_pos[0], Constance->rand_el_pos[1]);
+	cout << (char)((rand() % 4) + 3);
+}
+//------------------------------------------CLEAR_LAST_POS
+void clear_last_pos(const snake_constance *Constance)
+{
+	gotoxy(Constance->last_el_pos[0], Constance->last_el_pos[1]);
+	cout << " ";
+}
+//------------------------------------------SHOW_INFO
+void show_info(const snake_constance *Constance)
+{
+	gotoxy(10, MAX_VERTICAL + 5);
+	cout << "Snake size: " << Constance->snake_size_now << "    ";
+	cout << "Score: " << Constance->score_param << "    ";
+	cout << "Dinner location: " << Constance->rand_el_pos[0] << ", " << Constance->rand_el_pos[1] << "     ";
+}
+//------------------------------------------SET_SCORE
+void set_score(snake_constance *Constance, int snake_speed)
+{
+	int res = 0;
+
+	if (snake_speed == SPEED_THIRD)
+		res = 8;
+	
+	if (snake_speed == SPEED_SECOND)
+		res = 4;
+	
+	if (snake_speed == SPEED_FIRST)
+		res = 2;
+
+	Constance->score_param += res;
+}
+//------------------------------------------MAKE_PAUSE
+void make_pause()
+{
+	while (true)
+	{
+		if (_kbhit())
+			if (_getch() == 13)
+				break;
+		Sleep(100);
+	}
+}
+//------------------------------------------LADY_WINTER_SUCCESS
+bool lady_winter_success(const snake_constance *Constance)
+{
+	for (int i = 1; i < Constance->snake_size_now; i ++)
+		if (Constance->snake_pos[0][0] == Constance->snake_pos[0][i])
+			if (Constance->snake_pos[1][0] == Constance->snake_pos[1][i])
+				return BULL_SHIT;
+
+	return OK;
+}
+//------------------------------------------START_NOTE
+void start_note()
+{
+	gotoxy(30, 10);
+	cout << "SNAKE   CONSTANCE";
+	gotoxy(20, 12);
+	cout << "  Bloodshed Dev-Cpp 4.9.9.2 compiler";
+	Sleep(2048);
+	clrscr();
+}
+//------------------------------------------FINAL_NOTE
+void final_note()
+{
+	int num = 0;
+
+	while (num < 9)
+	{
+		if (_kbhit())
+		{
+			int ch = _getch();
+
+			if (ch == 13)
+				make_pause();
+			if (ch == 27)
+				break;
+		}
+
+		for (int i = 32; i < 65; i ++)
+		{
+		gotoxy(i, 4);
+		cout << (num % 2 == 0 ? "-" : " ");
+		}
+
+		for (int i = 5; i < 11; i ++)
+		{
+		gotoxy(32, i);
+		cout << (num % 2 == 0 ? "|" : " ");
+		}
+
+		for (int i = 5; i < 11; i ++)
+		{
+		gotoxy(64, i);
+		cout << (num % 2 == 0 ? "|" : " ");
+		}
+
+
+		for (int i = 32; i < 65; i ++)
+		{
+		gotoxy(i, 10);
+		cout << (num % 2 == 0 ? "-" : " ");
+		}
+
+		gotoxy(35, 7);
+		cout << (num % 2 == 0 ? "CONSTANCE WAS POISONED !!!" : "                           ");
+
+		gotoxy(0, MAX_VERTICAL + 1);
+		num ++;
+		Sleep(650);
+	}
+}
