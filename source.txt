@@ -1,4 +1,4 @@
-#include <iostream>
+#include <iostream>//Bloodshed Dev-Cpp 4.9.9.2 compiler
 #include <conio.h>
 #include <windows.h>
 #include <time.h>
@@ -119,7 +119,7 @@ int speed_menu()
 		if (strcmp(r_info, "") == 0)
 			break;
 		if (strcmp(r_info, "?") == 0)
-			cout << "usfuprog@gmail.com\n";
+			cout << "usfuprog@gmail.com\n";//old
 	}
 
 	int snake_speed = -1;
@@ -143,7 +143,7 @@ void draw_border()
 	{
 		for (int j = 0; j <= MAX_HORIZONTAL; j ++)
 			if (j == 0 || j == MAX_HORIZONTAL || i == 0 || i == MAX_VERTICAL)
-				cout << (char)18;
+				cout << (char)58;
 			else
 				cout << " ";
 	cout << endl;
@@ -192,7 +192,7 @@ void set_start_params(snake_constance *Constance)
 	Constance->snake_size_now ++;
 
 	Constance->score_param = 0;
-	Constance->standart_char = (char)15;
+	Constance->standart_char = 'O';
 	//Constance->head_char = (char)48;
 	Constance->head_char = (char)64;
 	//Constance->head_char = (char)79;
@@ -307,7 +307,7 @@ bool dinner_was_eaten(const snake_constance *Constance)
 void set_next_dinner(const snake_constance *Constance)
 {
 	gotoxy(Constance->rand_el_pos[0], Constance->rand_el_pos[1]);
-	cout << (char)((rand() % 4) + 3);
+	cout << (char)((rand() % 4) + 33);
 }
 //------------------------------------------CLEAR_LAST_POS
 void clear_last_pos(const snake_constance *Constance)
@@ -375,7 +375,7 @@ void final_note()
 {
 	int num = 0;
 
-	while (num < 9)
+	while (num < 7)
 	{
 		if (_kbhit())
 		{
